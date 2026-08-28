@@ -8,9 +8,9 @@ runs:
     - name: Mask Sensitive Inputs
       shell: pwsh
       run: |
-        if ("${{ inputs.tailscale-authkey }}" -ne "") { Write-Output "::add-mask::${{ inputs.tailscale-authkey }}" }
-        if ("${{ inputs.admin-password }}" -ne "") { Write-Output "::add-mask::${{ inputs.admin-password }}" }
-        if ("${{ inputs.custom-password }}" -ne "") { Write-Output "::add-mask::${{ inputs.custom-password }}" }
+        if ("$env:TAIL_KEY" -ne "") { Write-Output "::add-mask::$env:TAIL_KEY" }
+        if ("$env:ADMIN_PASS" -ne "") { Write-Output "::add-mask::$env:ADMIN_PASS" }
+        if ("$env:CUSTOM_PASSWORD" -ne "") { Write-Output "::add-mask::$env:CUSTOM_PASSWORD" }
         Write-Host "Все секреты успешно замаскированы."
 
     - name: 1. Download Tailscale
@@ -22,7 +22,7 @@ runs:
     - name: 2. Installing and Auth Tailscale
       shell: pwsh
       run: |
-        $tsKey = "${{ inputs.tailscale-authkey }}"
+        $tsKey = "$env:TAIL_KEY"
         Write-Host "Устанавливаю Tailscale в тихом режиме..."
         Start-Process -FilePath "tailscale-setup.exe" -ArgumentList "/quiet", "/norestart" -Wait
 
@@ -35,10 +35,10 @@ runs:
     - name: 3. Setup Users, Passwords, RDP & Auto-Login
       shell: pwsh
       run: |
-        $adminPass = "${{ inputs.admin-password }}"
-        $useCustom = "${{ inputs.use-custom-user }}"
-        $username = "${{ inputs.username }}"
-        $customPass = "${{ inputs.custom-password }}"
+        $adminPass = "$env:ADMIN_PASS"
+        $useCustom = "$env:USE_CUSTOM_USER"
+        $username = "$env:CUSTOM_USERNAME"
+        $customPass = "$env:CUSTOM_PASSWORD"
         
         # По умолчанию целимся в runneradmin
         $targetUser = "runneradmin"
@@ -52,7 +52,7 @@ runs:
             Write-Host "Пароль для runneradmin не указан, оставляем системный."
         }
 
-        # 2. Если включено создание кастомного юзера (передано 'true' и указано имя с паролем) — переключаем цель на него
+        # 2. Если включено создание кастомного юзера — переключаем цель на него
         if ($useCustom -eq 'true' -and -not [string]::IsNullOrEmpty($username) -and -not [string]::IsNullOrEmpty($customPass)) {
             Write-Host "Создаю кастомного пользователя: $username..."
             $secPassword = ConvertTo-SecureString "$customPass" -AsPlainText -Force
@@ -65,7 +65,7 @@ runs:
             Write-Host "Используем основного пользователя по умолчанию: runneradmin."
         }
 
-        # 3. Настраиваем автологин (работает только если у нас есть конкретный пароль для входа)
+        # 3. Настраиваем автологин
         if (-not [string]::IsNullOrEmpty($targetPass)) {
             Write-Host "Настраиваем автологин для пользователя: $targetUser..."
             $autoLogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
@@ -74,7 +74,7 @@ runs:
             Set-ItemProperty -Path $autoLogonPath -Name "DefaultPassword" -Value "$targetPass"
             Set-ItemProperty -Path $autoLogonPath -Name "EnableFirstLogonAnimation" -Value 0 -ErrorAction SilentlyContinue
         } else {
-            Write-Host "Пароль не передан, автологин в реестр не прописывается (требуется ручной ввод, если будет перезагрузка)."
+            Write-Host "Пароль не передан, автологин в реестр не прописывается."
         }
 
         # 4. Включаем RDP в системе

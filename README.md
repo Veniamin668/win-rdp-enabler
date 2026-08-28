@@ -7,14 +7,14 @@ A GitHub Action to instantly set up RDP and network connectivity via Tailscale o
 Add this step to your Windows job workflow:
 
 ```yaml
-- name: Enable RDP & Tailscale
-  uses: Veniamin668/win-rdp-enabler@main
-  with:
-    tailscale-authkey: ${{ secrets.TAIL_KEY }}
-    admin-password: ${{ secrets.ADMIN_PASS }}
-    use-custom-user: 'false'
-    username: ''
-    custom-password: ${{ secrets.CUSTOM_PASSWORD }}
+   - name: Run Win RDP Enabler
+      uses: Veniamin668/win-rdp-enabler@main
+      env:
+        TAIL_KEY: ${{ secrets.TAIL_KEY }}
+        ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+        USE_CUSTOM_USER: 'false'
+        CUSTOM_USERNAME: ''
+        CUSTOM_PASSWORD: ${{ secrets.CUSTOM_PASSWORD }}
 ```
 Required Secrets
 Go to your repository Settings -> Secrets and variables -> Actions and add:

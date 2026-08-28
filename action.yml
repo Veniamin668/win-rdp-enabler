@@ -1,5 +1,5 @@
 name: 'Win RDP Enabler'
-description: 'Enable RDP, setup Tailscale, configure optional users and auto-login on Windows GitHub runner'
+description: 'Enable RDP, setup Tailscale, configure optional users on Windows GitHub runner'
 author: 'Veniamin668'
 
 branding:
@@ -36,17 +36,13 @@ runs:
         $tsIp = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
         Write-Host "=== TAILSCALE IP: $tsIp ===" -ForegroundColor Green
 
-    - name: 3. Setup Users, Passwords, RDP, Safe Autologon & Reboot Fix
+    - name: 3. Setup Users, Passwords, RDP & Reboot Fix
       shell: pwsh
       run: |
         $adminPass = "$env:ADMIN_PASS"
         $useCustom = "$env:USE_CUSTOM_USER"
         $username = "$env:CUSTOM_USERNAME"
         $customPass = "$env:CUSTOM_PASSWORD"
-        
-        # По умолчанию целимся в runneradmin
-        $targetUser = "runneradmin"
-        $targetPass = $adminPass
         
         # 1. Если задан пароль для админа — меняем его у runneradmin
         if (-not [string]::IsNullOrEmpty($adminPass)) {
@@ -56,35 +52,21 @@ runs:
             Write-Host "Пароль для runneradmin не указан, оставляем системный."
         }
 
-        # 2. Если включено создание кастомного юзера — переключаем цель на него
+        # 2. Если включено создание кастомного юзера — создаем его
         if ($useCustom -eq 'true' -and -not [string]::IsNullOrEmpty($username) -and -not [string]::IsNullOrEmpty($customPass)) {
             Write-Host "Создаю кастомного пользователя: $username..."
             $secPassword = ConvertTo-SecureString "$customPass" -AsPlainText -Force
             New-LocalUser -Name $username -Password $secPassword -FullName "Cloud PC User" -Description "Custom Cloud PC Admin"
             Add-LocalGroupMember -Group "Administrators" -Member $username
-            
-            $targetUser = $username
-            $targetPass = $customPass
-        } else {
-            Write-Host "Используем основного пользователя по умолчанию: runneradmin."
         }
 
-        # 3. Настраиваем безопасный автологин через Sysinternals Autologon (без RDP-петли в реестре)
-        if (-not [string]::IsNullOrEmpty($targetPass)) {
-            Write-Host "Настраиваем автологин для пользователя: $targetUser через Sysinternals..."
-            Invoke-WebRequest -Uri "https://live.sysinternals.com/Autologon.exe" -OutFile "Autologon.exe"
-            Start-Process -FilePath ".\Autologon.exe" -ArgumentList "$targetUser . `"$targetPass`" /accepteula" -Wait -NoNewWindow
-        } else {
-            Write-Host "Пароль не передан, автологин не прописывается."
-        }
-
-        # 4. Включаем RDP в системе
+        # 3. Включаем RDP в системе
         Write-Host "Включаем RDP в системе..."
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-        # 5. Добавляем планировщик для гарантированного рестарта Tailscale после ребута
+        # 4. Планировщик для перезапуска Tailscale после ребута
         Write-Host "Добавляем системную задачу для автозапуска Tailscale после перезагрузки..."
         schtasks /create /tn "Tailscale_RDP_Fix" /tr "cmd.exe /c timeout /t 15 && net stop Tailscale && net start Tailscale" /sc onstart /ru "SYSTEM" /f
 
-        Write-Host "Всё готово! RDP и автологер настроены." -ForegroundColor Green
+        Write-Host "Всё готово! Автологин отключен, RDP настроен." -ForegroundColor Green

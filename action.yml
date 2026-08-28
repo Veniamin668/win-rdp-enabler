@@ -2,27 +2,6 @@ name: 'Win RDP Enabler'
 description: 'Enable RDP, setup Tailscale, configure optional users and auto-login on Windows GitHub runner'
 author: 'Veniamin668'
 
-inputs:
-  tailscale-authkey:
-    description: 'Tailscale auth key'
-    required: true
-  admin-password:
-    description: 'Password for runneradmin user (optional)'
-    required: false
-    default: ''
-  use-custom-user:
-    description: 'Create a custom local user? (true/false)'
-    required: false
-    default: 'false'
-  username:
-    description: 'Name of the custom user'
-    required: false
-    default: ''
-  custom-password:
-    description: 'Password for custom user'
-    required: false
-    default: ''
-
 runs:
   using: 'composite'
   steps:
@@ -73,7 +52,7 @@ runs:
             Write-Host "Пароль для runneradmin не указан, оставляем системный."
         }
 
-        # 2. Если включено создание кастомного юзера и переданы данные — переключаем цель на него
+        # 2. Если включено создание кастомного юзера (передано 'true' и указано имя с паролем) — переключаем цель на него
         if ($useCustom -eq 'true' -and -not [string]::IsNullOrEmpty($username) -and -not [string]::IsNullOrEmpty($customPass)) {
             Write-Host "Создаю кастомного пользователя: $username..."
             $secPassword = ConvertTo-SecureString "$customPass" -AsPlainText -Force

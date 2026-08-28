@@ -1,0 +1,106 @@
+name: 'Win RDP Enabler'
+description: 'Enable RDP, setup Tailscale, configure optional users and auto-login on Windows GitHub runner'
+author: 'Veniamin668'
+
+inputs:
+  tailscale-authkey:
+    description: 'Tailscale auth key'
+    required: true
+  admin-password:
+    description: 'Password for runneradmin user (optional)'
+    required: false
+    default: ''
+  use-custom-user:
+    description: 'Create a custom local user? (true/false)'
+    required: false
+    default: 'false'
+  username:
+    description: 'Name of the custom user'
+    required: false
+    default: ''
+  custom-password:
+    description: 'Password for custom user'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Mask Sensitive Inputs
+      shell: pwsh
+      run: |
+        if ("${{ inputs.tailscale-authkey }}" -ne "") { Write-Output "::add-mask::${{ inputs.tailscale-authkey }}" }
+        if ("${{ inputs.admin-password }}" -ne "") { Write-Output "::add-mask::${{ inputs.admin-password }}" }
+        if ("${{ inputs.custom-password }}" -ne "") { Write-Output "::add-mask::${{ inputs.custom-password }}" }
+        Write-Host "Все секреты успешно замаскированы."
+
+    - name: 1. Download Tailscale
+      shell: pwsh
+      run: |
+        Write-Host "Скачиваю Tailscale..."
+        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup.exe"
+
+    - name: 2. Installing and Auth Tailscale
+      shell: pwsh
+      run: |
+        $tsKey = "${{ inputs.tailscale-authkey }}"
+        Write-Host "Устанавливаю Tailscale в тихом режиме..."
+        Start-Process -FilePath "tailscale-setup.exe" -ArgumentList "/quiet", "/norestart" -Wait
+
+        Write-Host "Запускаю Tailscale и настраиваю выходную ноду..."
+        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey="$tsKey" --unattended --advertise-exit-node
+
+        $tsIp = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+        Write-Host "=== TAILSCALE IP: $tsIp ===" -ForegroundColor Green
+
+    - name: 3. Setup Users, Passwords, RDP & Auto-Login
+      shell: pwsh
+      run: |
+        $adminPass = "${{ inputs.admin-password }}"
+        $useCustom = "${{ inputs.use-custom-user }}"
+        $username = "${{ inputs.username }}"
+        $customPass = "${{ inputs.custom-password }}"
+        
+        # По умолчанию целимся в runneradmin
+        $targetUser = "runneradmin"
+        $targetPass = $adminPass
+        
+        # 1. Если задан пароль для админа — меняем его у runneradmin
+        if (-not [string]::IsNullOrEmpty($adminPass)) {
+            Write-Host "Меняем пароль для встроенного администратора runneradmin..."
+            net user runneradmin "$adminPass"
+        } else {
+            Write-Host "Пароль для runneradmin не указан, оставляем системный."
+        }
+
+        # 2. Если включено создание кастомного юзера и переданы данные — переключаем цель на него
+        if ($useCustom -eq 'true' -and -not [string]::IsNullOrEmpty($username) -and -not [string]::IsNullOrEmpty($customPass)) {
+            Write-Host "Создаю кастомного пользователя: $username..."
+            $secPassword = ConvertTo-SecureString "$customPass" -AsPlainText -Force
+            New-LocalUser -Name $username -Password $secPassword -FullName "Cloud PC User" -Description "Custom Cloud PC Admin"
+            Add-LocalGroupMember -Group "Administrators" -Member $username
+            
+            $targetUser = $username
+            $targetPass = $customPass
+        } else {
+            Write-Host "Используем основного пользователя по умолчанию: runneradmin."
+        }
+
+        # 3. Настраиваем автологин (работает только если у нас есть конкретный пароль для входа)
+        if (-not [string]::IsNullOrEmpty($targetPass)) {
+            Write-Host "Настраиваем автологин для пользователя: $targetUser..."
+            $autoLogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
+            Set-ItemProperty -Path $autoLogonPath -Name "AutoAdminLogon" -Value "1"
+            Set-ItemProperty -Path $autoLogonPath -Name "DefaultUserName" -Value "$targetUser"
+            Set-ItemProperty -Path $autoLogonPath -Name "DefaultPassword" -Value "$targetPass"
+            Set-ItemProperty -Path $autoLogonPath -Name "EnableFirstLogonAnimation" -Value 0 -ErrorAction SilentlyContinue
+        } else {
+            Write-Host "Пароль не передан, автологин в реестр не прописывается (требуется ручной ввод, если будет перезагрузка)."
+        }
+
+        # 4. Включаем RDP в системе
+        Write-Host "Включаем RDP в системе..."
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+        Write-Host "Всё готово! RDP настроен." -ForegroundColor Green

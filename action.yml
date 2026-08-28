@@ -2,6 +2,10 @@ name: 'Win RDP Enabler'
 description: 'Enable RDP, setup Tailscale, configure optional users and auto-login on Windows GitHub runner'
 author: 'Veniamin668'
 
+branding:
+  icon: 'monitor'
+  color: 'blue'
+
 runs:
   using: 'composite'
   steps:

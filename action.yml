@@ -1,42 +1,4 @@
-name: 'Win RDP Enabler'
-description: 'Enable RDP, setup Tailscale, configure optional users and auto-login on Windows GitHub runner'
-author: 'Veniamin668'
-
-branding:
-  icon: 'monitor'
-  color: 'blue'
-
-runs:
-  using: 'composite'
-  steps:
-    - name: Mask Sensitive Inputs
-      shell: pwsh
-      run: |
-        if ("$env:TAIL_KEY" -ne "") { Write-Output "::add-mask::$env:TAIL_KEY" }
-        if ("$env:ADMIN_PASS" -ne "") { Write-Output "::add-mask::$env:ADMIN_PASS" }
-        if ("$env:CUSTOM_PASSWORD" -ne "") { Write-Output "::add-mask::$env:CUSTOM_PASSWORD" }
-        Write-Host "Все секреты успешно замаскированы."
-
-    - name: 1. Download Tailscale
-      shell: pwsh
-      run: |
-        Write-Host "Скачиваю Tailscale..."
-        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup.exe"
-
-    - name: 2. Installing and Auth Tailscale
-      shell: pwsh
-      run: |
-        $tsKey = "$env:TAIL_KEY"
-        Write-Host "Устанавливаю Tailscale в тихом режиме..."
-        Start-Process -FilePath "tailscale-setup.exe" -ArgumentList "/quiet", "/norestart" -Wait
-
-        Write-Host "Запускаю Tailscale и настраиваю выходную ноду..."
-        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey="$tsKey" --unattended --advertise-exit-node
-
-        $tsIp = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
-        Write-Host "=== TAILSCALE IP: $tsIp ===" -ForegroundColor Green
-
-    - name: 3. Setup Users, Passwords, RDP & Auto-Login
+- name: 3. Setup Users, Passwords, RDP & Safe Autologon
       shell: pwsh
       run: |
         $adminPass = "$env:ADMIN_PASS"
@@ -69,16 +31,13 @@ runs:
             Write-Host "Используем основного пользователя по умолчанию: runneradmin."
         }
 
-        # 3. Настраиваем автологин
+        # 3. Настраиваем безопасный автологин через Sysinternals Autologon (без RDP-петли в реестре)
         if (-not [string]::IsNullOrEmpty($targetPass)) {
-            Write-Host "Настраиваем автологин для пользователя: $targetUser..."
-            $autoLogonPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon'
-            Set-ItemProperty -Path $autoLogonPath -Name "AutoAdminLogon" -Value "1"
-            Set-ItemProperty -Path $autoLogonPath -Name "DefaultUserName" -Value "$targetUser"
-            Set-ItemProperty -Path $autoLogonPath -Name "DefaultPassword" -Value "$targetPass"
-            Set-ItemProperty -Path $autoLogonPath -Name "EnableFirstLogonAnimation" -Value 0 -ErrorAction SilentlyContinue
+            Write-Host "Настраиваем автологин для пользователя: $targetUser через Sysinternals..."
+            Invoke-WebRequest -Uri "https://live.sysinternals.com/Autologon.exe" -OutFile "Autologon.exe"
+            Start-Process -FilePath ".\Autologon.exe" -ArgumentList "$targetUser . `"$targetPass`" /accepteula" -Wait -NoNewWindow
         } else {
-            Write-Host "Пароль не передан, автологин в реестр не прописывается."
+            Write-Host "Пароль не передан, автологин не прописывается."
         }
 
         # 4. Включаем RDP в системе

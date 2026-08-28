@@ -65,8 +65,4 @@ runs:
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
         Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
-        # 4. Планировщик для перезапуска Tailscale после ребута
-        Write-Host "Добавляем системную задачу для автозапуска Tailscale после перезагрузки..."
-        schtasks /create /tn "Tailscale_RDP_Fix" /tr "cmd.exe /c timeout /t 15 && net stop Tailscale && net start Tailscale" /sc onstart /ru "SYSTEM" /f
-
         Write-Host "Всё готово! Автологин отключен, RDP настроен." -ForegroundColor Green

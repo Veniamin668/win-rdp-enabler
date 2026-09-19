@@ -21,14 +21,14 @@ runs:
       shell: pwsh
       run: |
         Write-Host "Скачиваю Tailscale..."
-        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile "tailscale-setup.exe"
+        Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-1.102.4-arm64.msi" -OutFile "tailscale-setup-arm64.msi"
 
     - name: 2. Installing and Auth Tailscale
       shell: pwsh
       run: |
         $tsKey = "$env:TAIL_KEY"
         Write-Host "Устанавливаю Tailscale в тихом режиме..."
-        Start-Process -FilePath "tailscale-setup.exe" -ArgumentList "/quiet", "/norestart" -Wait
+        Start-Process -FilePath "tailscale-setup-arm64.msi" -ArgumentList "/quiet", "/norestart" -Wait
 
         Write-Host "Запускаю Tailscale и настраиваю выходную ноду..."
         & "C:\Program Files\Tailscale\tailscale.exe" up --authkey="$tsKey" --unattended --advertise-exit-node

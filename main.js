@@ -1,5 +1,5 @@
+```js
 const { execFileSync } = require('child_process');
-const fs = require('fs');
 
 function runPowerShell(script) {
     execFileSync(
@@ -44,7 +44,21 @@ maskSecret(tailKey);
 maskSecret(adminPass);
 maskSecret(customPass);
 
-console.log('Все секреты успешно замаскированы.');
+console.log('[Win RDP Enabler] Secrets masked.');
+console.log(`[Win RDP Enabler] TAIL_KEY: ${tailKey ? 'provided' : 'not provided'}`);
+console.log(`[Win RDP Enabler] ADMIN_PASS: ${adminPass ? 'provided' : 'not provided'}`);
+console.log(`[Win RDP Enabler] CUSTOM_PASSWORD: ${customPass ? 'provided' : 'not provided'}`);
+console.log(`[Win RDP Enabler] USE_CUSTOM_USER: ${useCustom}`);
+console.log(`[Win RDP Enabler] CUSTOM_USERNAME: ${username || 'not provided'}`);
+
+// ============================================================
+// VALIDATION
+// ============================================================
+
+if (!tailKey) {
+    console.error('[Win RDP Enabler] ERROR: TAIL_KEY is not provided.');
+    process.exit(1);
+}
 
 // ============================================================
 // MAIN POWERSHELL LOGIC
@@ -53,11 +67,11 @@ console.log('Все секреты успешно замаскированы.');
 const ps = `
 $ErrorActionPreference = "Stop"
 
-$tsKey = ${JSON.stringify(tailKey)}
-$adminPass = ${JSON.stringify(adminPass)}
-$useCustom = ${JSON.stringify(useCustom)}
-$username = ${JSON.stringify(username)}
-$customPass = ${JSON.stringify(customPass)}
+$tsKey = $env:TAIL_KEY
+$adminPass = $env:ADMIN_PASS
+$useCustom = $env:USE_CUSTOM_USER
+$username = $env:CUSTOM_USERNAME
+$customPass = $env:CUSTOM_PASSWORD
 
 # ============================================================
 # 1. DOWNLOAD TAILSCALE
@@ -65,9 +79,11 @@ $customPass = ${JSON.stringify(customPass)}
 
 Write-Host "Скачиваю Tailscale..."
 
-Invoke-WebRequest `
-    + `-Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" `
-    + `-OutFile "tailscale-setup.exe"
+$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup.exe"
+
+Invoke-WebRequest \`
+    -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" \`
+    -OutFile $installer
 
 # ============================================================
 # 2. INSTALL TAILSCALE
@@ -75,24 +91,38 @@ Invoke-WebRequest `
 
 Write-Host "Устанавливаю Tailscale в тихом режиме..."
 
-Start-Process `
-    -FilePath "tailscale-setup.exe" `
-    -ArgumentList "/quiet", "/norestart" `
-    -Wait
+$installProcess = Start-Process \`
+    -FilePath $installer \`
+    -ArgumentList "/quiet", "/norestart" \`
+    -Wait \`
+    -PassThru
+
+if ($installProcess.ExitCode -ne 0) {
+    throw "Tailscale installer failed with exit code $($installProcess.ExitCode)"
+}
 
 # ============================================================
 # 3. AUTH TAILSCALE
 # ============================================================
 
+$tailscaleExe = "C:\\Program Files\\Tailscale\\tailscale.exe"
+
+if (-not (Test-Path $tailscaleExe)) {
+    throw "Tailscale executable not found: $tailscaleExe"
+}
+
 Write-Host "Запускаю Tailscale и настраиваю exit node..."
 
-& "C:\\Program Files\\Tailscale\\tailscale.exe" `
-    up `
-    --authkey="$tsKey" `
-    --unattended `
+& $tailscaleExe up \`
+    --authkey="$tsKey" \`
+    --unattended \`
     --advertise-exit-node
 
-$tsIp = & "C:\\Program Files\\Tailscale\\tailscale.exe" ip -4
+if ($LASTEXITCODE -ne 0) {
+    throw "Tailscale authentication failed with exit code $LASTEXITCODE"
+}
+
+$tsIp = & $tailscaleExe ip -4
 
 Write-Host "=== TAILSCALE IP: $tsIp ===" -ForegroundColor Green
 
@@ -106,6 +136,10 @@ if (-not [string]::IsNullOrEmpty($adminPass)) {
 
     net user runneradmin "$adminPass"
 
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to change runneradmin password."
+    }
+
 }
 else {
 
@@ -118,28 +152,28 @@ else {
 # ============================================================
 
 if (
-    $useCustom -eq "true" `
-    -and `
-    -not [string]::IsNullOrEmpty($username) `
-    -and `
+    $useCustom -eq "true" \`
+    -and \`
+    -not [string]::IsNullOrEmpty($username) \`
+    -and \`
     -not [string]::IsNullOrEmpty($customPass)
 ) {
 
     Write-Host "Создаю кастомного пользователя: $username..."
 
-    $secPassword = ConvertTo-SecureString `
-        "$customPass" `
-        -AsPlainText `
+    $secPassword = ConvertTo-SecureString \`
+        "$customPass" \`
+        -AsPlainText \`
         -Force
 
-    New-LocalUser `
-        -Name $username `
-        -Password $secPassword `
-        -FullName "Cloud PC User" `
+    New-LocalUser \`
+        -Name $username \`
+        -Password $secPassword \`
+        -FullName "Cloud PC User" \`
         -Description "Custom Cloud PC Admin"
 
-    Add-LocalGroupMember `
-        -Group "Administrators" `
+    Add-LocalGroupMember \`
+        -Group "Administrators" \`
         -Member $username
 }
 
@@ -149,17 +183,32 @@ if (
 
 Write-Host "Включаю RDP..."
 
-Set-ItemProperty `
-    -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' `
-    -Name "fDenyTSConnections" `
+Set-ItemProperty \`
+    -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' \`
+    -Name "fDenyTSConnections" \`
     -Value 0
 
-Enable-NetFirewallRule `
+Enable-NetFirewallRule \`
     -DisplayGroup "Remote Desktop"
+
+# ============================================================
+# 7. CLEANUP INSTALLER
+# ============================================================
+
+Remove-Item \`
+    -Path $installer \`
+    -Force \`
+    -ErrorAction SilentlyContinue
 
 Write-Host "========================================"
 Write-Host "WIN RDP ENABLER READY"
 Write-Host "========================================" -ForegroundColor Green
 `;
 
-runPowerShell(ps);
+try {
+    runPowerShell(ps);
+} catch (error) {
+    console.error('[Win RDP Enabler] Action failed.');
+    process.exit(1);
+}
+```

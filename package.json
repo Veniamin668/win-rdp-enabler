@@ -1,5 +1,5 @@
 {
   "name": "win-rdp-enabler",
   "version": "2.0.0",
-  "private": true
+  "private": false
 }

@@ -15,6 +15,7 @@ Add this step to your Windows job workflow:
          USE_CUSTOM_USER: 'false'
          CUSTOM_USERNAME: ''
          CUSTOM_PASSWORD: ${{ secrets.CUSTOM_PASSWORD }}
+         HOSTNAME: 'your name vm'
 ```
 Required Secrets
 Go to your repository Settings -> Secrets and variables -> Actions and add:
@@ -24,6 +25,8 @@ Go to your repository Settings -> Secrets and variables -> Actions and add:
 `ADMIN_PASS` — Password for runneradmin (optional)
 
 `CUSTOM_PASSWORD` — Password for your custom user if use-custom-user is enabled (optional)
+
+`HOSTNAME` — Name runner , you can use any name for the runner. (optional)
 
 ### 👤 Custom User Options
 

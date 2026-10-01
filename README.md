@@ -15,6 +15,7 @@ Add this step to your Windows job workflow:
          USE_CUSTOM_USER: 'false'
          CUSTOM_USERNAME: ''
          CUSTOM_PASSWORD: ${{ secrets.CUSTOM_PASSWORD }}
+         HOSTNAME: 'YOUR NAME DEVICE'
 ```
 Required Secrets
 Go to your repository Settings -> Secrets and variables -> Actions and add:

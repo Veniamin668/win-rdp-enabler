@@ -28,6 +28,7 @@ const adminPass = process.env.ADMIN_PASS || '';
 const useCustom = process.env.USE_CUSTOM_USER || 'false';
 const username = process.env.CUSTOM_USERNAME || '';
 const customPass = process.env.CUSTOM_PASSWORD || '';
+const hostname = process.env.HOSTNAME || '';
 
 // ============================================================
 // MASK SECRETS
@@ -49,6 +50,7 @@ console.log('[Win RDP Enabler] ADMIN_PASS: ' + (adminPass ? 'provided' : 'not pr
 console.log('[Win RDP Enabler] CUSTOM_PASSWORD: ' + (customPass ? 'provided' : 'not provided'));
 console.log('[Win RDP Enabler] USE_CUSTOM_USER: ' + useCustom);
 console.log('[Win RDP Enabler] CUSTOM_USERNAME: ' + (username || 'not provided'));
+console.log('[Win RDP Enabler] TAILSCALE HOSTNAME: ' + (hostname || 'default'));
 
 // ============================================================
 // VALIDATION
@@ -71,6 +73,7 @@ const ps = [
     '$useCustom = $env:USE_CUSTOM_USER',
     '$username = $env:CUSTOM_USERNAME',
     '$customPass = $env:CUSTOM_PASSWORD',
+    '$hostname = $env:HOSTNAME',
     '',
     '# ============================================================',
     '# 1. DOWNLOAD TAILSCALE',
@@ -106,7 +109,18 @@ const ps = [
     '',
     'Write-Host "Запускаю Tailscale и настраиваю exit node..."',
     '',
-    '& $tailscaleExe up --authkey="$tsKey" --unattended --advertise-exit-node',
+    'if ([string]::IsNullOrWhiteSpace($hostname)) {',
+    '',
+    '    & $tailscaleExe up --authkey="$tsKey" --unattended --advertise-exit-node',
+    '',
+    '}',
+    'else {',
+    '',
+    '    Write-Host "Использую имя Tailscale устройства: $hostname"',
+    '',
+    '    & $tailscaleExe up --authkey="$tsKey" --unattended --advertise-exit-node --hostname="$hostname"',
+    '',
+    '}',
     '',
     'if ($LASTEXITCODE -ne 0) {',
     '    throw "Tailscale authentication failed with exit code $LASTEXITCODE"',
@@ -121,15 +135,20 @@ const ps = [
     '# ============================================================',
     '',
     'if (-not [string]::IsNullOrEmpty($adminPass)) {',
+    '',
     '    Write-Host "Меняем пароль runneradmin..."',
+    '',
     '    net user runneradmin "$adminPass"',
     '',
     '    if ($LASTEXITCODE -ne 0) {',
     '        throw "Failed to change runneradmin password."',
     '    }',
+    '',
     '}',
     'else {',
+    '',
     '    Write-Host "Пароль для runneradmin не указан."',
+    '',
     '}',
     '',
     '# ============================================================',
@@ -137,6 +156,7 @@ const ps = [
     '# ============================================================',
     '',
     'if ($useCustom -eq "true" -and -not [string]::IsNullOrEmpty($username) -and -not [string]::IsNullOrEmpty($customPass)) {',
+    '',
     '    Write-Host "Создаю кастомного пользователя: $username..."',
     '',
     '    $secPassword = ConvertTo-SecureString "$customPass" -AsPlainText -Force',
@@ -144,6 +164,7 @@ const ps = [
     '    New-LocalUser -Name $username -Password $secPassword -FullName "Cloud PC User" -Description "Custom Cloud PC Admin"',
     '',
     '    Add-LocalGroupMember -Group "Administrators" -Member $username',
+    '',
     '}',
     '',
     '# ============================================================',

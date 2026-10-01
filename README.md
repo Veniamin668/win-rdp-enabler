@@ -8,7 +8,7 @@ Add this step to your Windows job workflow:
 
 ```yaml
       - name: Run Win RDP Enabler
-        uses: Veniamin668/win-rdp-enabler@main
+        uses: Veniamin668/win-rdp-enabler@x64-js (or arm-js)
         env:
          TAIL_KEY: ${{ secrets.TAIL_KEY }}
          ADMIN_PASS: ${{ secrets.ADMIN_PASS }}

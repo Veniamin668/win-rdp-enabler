@@ -26,6 +26,8 @@ Go to your repository Settings -> Secrets and variables -> Actions and add:
 
 `CUSTOM_PASSWORD` — Password for your custom user if use-custom-user is enabled (optional)
 
+`HOSTNAME` — Name runner , you can use any name for the runner. (optional)
+
 ### 👤 Custom User Options
 
 - If `use-custom-user` is set to **`false`**, the action will use the default `runneradmin` account (and update its password if `ADMIN_PASS` is provided).

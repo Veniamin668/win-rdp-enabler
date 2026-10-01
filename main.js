@@ -1,4 +1,3 @@
-```js
 const { execFileSync } = require('child_process');
 
 function runPowerShell(script) {
@@ -179,4 +178,3 @@ try {
     console.error(error.message);
     process.exit(1);
 }
-```

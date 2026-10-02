@@ -10,12 +10,12 @@ Add this step to your Windows job workflow:
       - name: Run Win RDP Enabler
         uses: Veniamin668/win-rdp-enabler@arm-js # (or x64-js)
         with:
-           tail-key: ${{ secrets.TAIL_KEY }}
-           admin-pass: ${{ secrets.ADMIN_PASS }}
-           use-custom-user: 'false'
-           custom-username: ''
-           custom-password: ${{ secrets.CUSTOM_PASSWORD }}
-           hostname: 'your-name-vm'
+           TAIL_KEY: ${{ secrets.TAIL_KEY }}
+           ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
+           USE_CUSTOM_USER: 'false'
+           CUSTOM_USERNAME: ''
+           CUSTOM_PASSWORD: ${{ secrets.CUSTOM_PASSWORD }}
+           HOSTNAME: 'your-name-vm'
 ```
 ### Available versions
 

@@ -1,12 +1,43 @@
 name: 'Win RDP Enabler'
-description: 'Enable RDP, setup Tailscale, configure optional users on Windows GitHub runner'
+description: 'Enable RDP, setup Tailscale, configure optional Windows users and automatically logout Tailscale after the job'
 author: 'Veniamin668'
 
 branding:
   icon: 'monitor'
   color: 'blue'
 
+inputs:
+  tail-key:
+    description: 'Tailscale authentication key'
+    required: true
+
+  admin-pass:
+    description: 'Password for runneradmin'
+    required: false
+    default: ''
+
+  custom-password:
+    description: 'Password for the custom Windows user'
+    required: false
+    default: ''
+
+  use-custom-user:
+    description: 'Create a custom local administrator'
+    required: false
+    default: 'false'
+
+  custom-username:
+    description: 'Custom local administrator username'
+    required: false
+    default: ''
+
+  hostname:
+    description: 'Tailscale device hostname'
+    required: false
+    default: ''
+
 runs:
   using: 'node24'
   main: 'main.js'
   post: 'post.js'
+  

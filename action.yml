@@ -7,31 +7,31 @@ branding:
   color: 'blue'
 
 inputs:
-  tail-key:
+  TAIL_KEY:
     description: 'Tailscale authentication key'
     required: true
 
-  admin-pass:
+  ADMIN_PASS:
     description: 'Password for runneradmin'
     required: false
     default: ''
 
-  custom-password:
+  CUSTOM_PASSWORD:
     description: 'Password for the custom Windows user'
     required: false
     default: ''
 
-  use-custom-user:
+  USE_CUSTOM_USER:
     description: 'Create a custom local administrator'
     required: false
     default: 'false'
 
-  custom-username:
+  CUSTOM_USERNAME:
     description: 'Custom local administrator username'
     required: false
     default: ''
 
-  hostname:
+  HOSTNAME:
     description: 'Tailscale device hostname'
     required: false
     default: ''
@@ -40,4 +40,3 @@ runs:
   using: 'node24'
   main: 'main.js'
   post: 'post.js'
-  

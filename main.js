@@ -44,24 +44,37 @@ maskSecret(tailKey);
 maskSecret(adminPass);
 maskSecret(customPass);
 
+// ============================================================
+// LOG INPUT STATUS WITHOUT EXPOSING VALUES
+// ============================================================
+
 console.log('[Win RDP Enabler] Secrets masked.');
+
 console.log(
     '[Win RDP Enabler] TAIL_KEY: ' +
     (tailKey ? 'provided' : 'not provided')
 );
+
 console.log(
     '[Win RDP Enabler] ADMIN_PASS: ' +
     (adminPass ? 'provided' : 'not provided')
 );
+
 console.log(
     '[Win RDP Enabler] CUSTOM_PASSWORD: ' +
     (customPass ? 'provided' : 'not provided')
 );
-console.log('[Win RDP Enabler] USE_CUSTOM_USER: ' + useCustom);
+
+console.log(
+    '[Win RDP Enabler] USE_CUSTOM_USER: ' +
+    useCustom
+);
+
 console.log(
     '[Win RDP Enabler] CUSTOM_USERNAME: ' +
     (username || 'not provided')
 );
+
 console.log(
     '[Win RDP Enabler] HOSTNAME: ' +
     (hostname || 'default')
@@ -73,7 +86,7 @@ console.log(
 
 if (!tailKey) {
     console.error(
-        '[Win RDP Enabler] ERROR: tail-key input is required.'
+        '[Win RDP Enabler] ERROR: TAIL_KEY input is required.'
     );
 
     process.exit(1);
@@ -99,7 +112,7 @@ const ps = [
     '',
     'Write-Host "Скачиваю Tailscale ARM64..."',
     '',
-    '$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup-arm64.msi"',
+    '$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup-latest-arm64.msi"',
     '',
     'Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-arm64.msi" -OutFile $installer',
     '',

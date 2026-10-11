@@ -30,6 +30,7 @@ const customPass = process.env.INPUT_CUSTOM_PASSWORD || '';
 const useCustom = process.env.INPUT_USE_CUSTOM_USER || 'false';
 const username = process.env.INPUT_CUSTOM_USERNAME || '';
 const hostname = process.env.INPUT_HOSTNAME || '';
+const tags = process.env.INPUT_ADVERTISE_TAGS || '';
 
 // ============================================================
 // MASK SECRETS
@@ -87,6 +88,11 @@ console.log(
     (hostname || 'default')
 );
 
+console.log(
+    '[Win RDP Enabler] ADVERTISE_TAGS: ' +
+    (tags || 'not provided')
+);
+
 // ============================================================
 // VALIDATION
 // ============================================================
@@ -106,13 +112,14 @@ if (!tailKey && !oauthKey) {
 const ps = [
     '$ErrorActionPreference = "Stop"',
     '',
-    '$tsKey = $env:INPUT_TAIL_KEY',
-    '$oauthKey = $env:INPUT_OAUTH_KEY',
-    '$adminPass = $env:INPUT_ADMIN_PASS',
-    '$customPass = $env:INPUT_CUSTOM_PASSWORD',
-    '$useCustom = $env:INPUT_USE_CUSTOM_USER',
-    '$username = $env:INPUT_CUSTOM_USERNAME',
-    '$hostname = $env:INPUT_HOSTNAME',
+    '$tsKey =$env:INPUT_TAIL_KEY',
+    '$oauthKey =$env:INPUT_OAUTH_KEY',
+    '$adminPass =$env:INPUT_ADMIN_PASS',
+    '$customPass =$env:INPUT_CUSTOM_PASSWORD',
+    '$useCustom =$env:INPUT_USE_CUSTOM_USER',
+    '$username =$env:INPUT_CUSTOM_USERNAME',
+    '$hostname =$env:INPUT_HOSTNAME',
+    '$tags =$env:INPUT_ADVERTISE_TAGS',
     '',
     '# ============================================================',
     '# DOWNLOAD TAILSCALE',
@@ -120,7 +127,7 @@ const ps = [
     '',
     'Write-Host "Скачиваю Tailscale..."',
     '',
-    '$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup.exe"',
+    '$installer = Join-Path$env:RUNNER_TEMP "tailscale-setup.exe"',
     '',
     'Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile $installer',
     '',
@@ -157,32 +164,27 @@ const ps = [
     '$finalAuthKey = ""',
     'if (-not [string]::IsNullOrWhiteSpace($oauthKey)) {',
     '    Write-Host "Используется авторизация через новый OAuth токен..."',
-    '    $finalAuthKey = $oauthKey',
+    '    $finalAuthKey =$oauthKey',
     '} else {',
     '    Write-Host "Используется старая логика авторизации через TAIL_KEY..."',
-    '    $finalAuthKey = $tsKey',
+    '    $finalAuthKey =$tsKey',
     '}',
     '',
     'Write-Host "Запускаю Tailscale и настраиваю exit node..."',
     '',
-    'if ([string]::IsNullOrWhiteSpace($hostname)) {',
+    '$tailscaleArgs = @("up", "--authkey=$finalAuthKey", "--unattended", "--advertise-exit-node")',
     '',
-    '    & $tailscaleExe up `',
-    '        --authkey="$finalAuthKey" `',
-    '        --unattended `',
-    '        --advertise-exit-node',
-    '',
+    'if (-not [string]::IsNullOrWhiteSpace($tags)) {',
+    '    Write-Host "Используются теги: $tags"',
+    '    $tailscaleArgs += "--advertise-tags=$tags"',
     '}',
-    'else {',
     '',
+    'if (-not [string]::IsNullOrWhiteSpace($hostname)) {',
     '    Write-Host "Использую hostname: $hostname"',
-    '',
-    '    & $tailscaleExe up `',
-    '        --authkey="$finalAuthKey" `',
-    '        --unattended `',
-    '        --advertise-exit-node `',
-    '        --hostname="$hostname"',
+    '    $tailscaleArgs += "--hostname=$hostname"',
     '}',
+    '',
+    '& $tailscaleExe @tailscaleArgs',
     '',
     'if ($LASTEXITCODE -ne 0) {',
     '    throw "Tailscale authentication failed with exit code $LASTEXITCODE"',

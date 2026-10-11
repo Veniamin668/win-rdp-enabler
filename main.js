@@ -127,7 +127,7 @@ const ps = [
     '',
     'Write-Host "Скачиваю Tailscale..."',
     '',
-    '$installer = Join-Path$env:RUNNER_TEMP "tailscale-setup.exe"',
+    '$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup.exe"',
     '',
     'Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile $installer',
     '',

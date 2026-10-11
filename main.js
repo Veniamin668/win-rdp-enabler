@@ -260,7 +260,7 @@ const ps = [
     'Write-Host "========================================"',
     'Write-Host "WIN RDP ENABLER READY FOR ARM64"',
     'Write-Host "========================================" -ForegroundColor Green'
-].join('n');
+].join('\n');
 
 // ============================================================
 // RUN

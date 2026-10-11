@@ -1,7 +1,7 @@
 const { execFileSync } = require('child_process');
 
 function runPowerShell(script) {
-    const buffer = Buffer.from(script, 'utf16le');
+    const buffer = Buffer.from(script, 'utf8');
     const encodedCommand = buffer.toString('base64');
 
     execFileSync(
@@ -130,7 +130,7 @@ const ps = [
     '',
     'Write-Host "Скачиваю Tailscale ARM64..."',
     '',
-    '$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup-latest-arm64.msi"',
+    '$installer = Join-Path$env:RUNNER_TEMP "tailscale-setup-latest-arm64.msi"',
     '',
     'Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-arm64.msi" -OutFile $installer',
     '',

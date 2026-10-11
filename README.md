@@ -16,6 +16,7 @@ Add this step to your Windows job workflow:
            CUSTOM_USERNAME: ''
            CUSTOM_PASSWORD: ${{ secrets.CUSTOM_PASSWORD }}
            HOSTNAME: 'your-name-vm'
+           ADVERTISE_TAGS: 'tag:runner'
 ```
 ### Available versions
 

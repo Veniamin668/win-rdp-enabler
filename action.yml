@@ -40,6 +40,10 @@ inputs:
     description: 'Tailscale OAuth Client Secret (on tskey-client...)'
     required: false
 
+  ADVERTISE_TAGS:
+    description: 'Tailscale tags required for OAuth keys (e.g. tag:runner)'
+    required: false
+    default: ''
 
 runs:
   using: 'node24'

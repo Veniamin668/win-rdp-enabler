@@ -1,25 +1,36 @@
 const { execFileSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-function runPowerShell(script) {
-    const buffer = Buffer.from(script, 'utf8');
-    const encodedCommand = buffer.toString('base64');
+function runPowerShell(scriptContent) {
+    const tempScriptPath = path.join(process.env.RUNNER_TEMP || '.', `rdp-setup-${Date.now()}.ps1`);
+    
+    // Записываем скрипт в файл в кодировке UTF-8
+    fs.writeFileSync(tempScriptPath, scriptContent, 'utf8');
 
-    execFileSync(
-        'pwsh.exe',
-        [
-            '-NoProfile',
-            '-NonInteractive',
-            '-ExecutionPolicy',
-            'Bypass',
-            '-EncodedCommand',
-            encodedCommand
-        ],
-        {
-            stdio: 'inherit',
-            windowsHide: true,
-            env: process.env
+    try {
+        execFileSync(
+            'pwsh.exe',
+            [
+                '-NoProfile',
+                '-NonInteractive',
+                '-ExecutionPolicy',
+                'Bypass',
+                '-File',
+                tempScriptPath
+            ],
+            {
+                stdio: 'inherit',
+                windowsHide: true,
+                env: process.env
+            }
+        );
+    } finally {
+        // Удаляем временный файл после выполнения
+        if (fs.existsSync(tempScriptPath)) {
+            fs.unlinkSync(tempScriptPath);
         }
-    );
+    }
 }
 
 // ============================================================
@@ -27,7 +38,7 @@ function runPowerShell(script) {
 // ============================================================
 
 const tailKey = process.env.INPUT_TAIL_KEY || '';
-const oauthKey = process.env.INPUT_OAUTH_KEY || ''; // ДОБАВЛЕН OAUTH ДЛЯ ARM
+const oauthKey = process.env.INPUT_OAUTH_KEY || '';
 const adminPass = process.env.INPUT_ADMIN_PASS || '';
 const customPass = process.env.INPUT_CUSTOM_PASSWORD || '';
 const useCustom = process.env.INPUT_USE_CUSTOM_USER || 'false';
@@ -109,7 +120,7 @@ if (!tailKey && !oauthKey) {
 }
 
 // ============================================================
-// POWERSHELL 7
+// POWERSHELL 7 SCRIPT CONTENT
 // ============================================================
 
 const ps = [

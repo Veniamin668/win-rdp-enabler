@@ -8,9 +8,10 @@ Add this step to your Windows job workflow:
 
 ```yaml
       - name: Run Win RDP Enabler
-        uses: Veniamin668/win-rdp-enabler@arm-js # (or x64-js)
+        uses: Veniamin668/win-rdp-enabler@arm-oauth # (or x64-oauth)
         with:
-           TAIL_KEY: ${{ secrets.TAIL_KEY }}
+           OAUTH_KEY: ${{ secrets.TAIL_OAUTH }} # if TAIL_KEY not use
+           TAIL_KEY: ${{ secrets.TAIL_KEY }} # optional if not use OAUTH
            ADMIN_PASS: ${{ secrets.ADMIN_PASS }}
            USE_CUSTOM_USER: 'false'
            CUSTOM_USERNAME: ''
@@ -26,13 +27,17 @@ Add this step to your Windows job workflow:
 Required Secrets
 Go to your repository Settings -> Secrets and variables -> Actions and add:
 
-`TAIL_KEY` — Your Tailscale Auth Key (required)
+`TAIL_KEY` — Your Tailscale Auth Key (optional)
+
+`OAUTH_KEY` — Your Tailscale OAuth Key (optional)
 
 `ADMIN_PASS` — Password for runneradmin (optional)
 
 `CUSTOM_PASSWORD` — Password for your custom user if use-custom-user is enabled (optional)
 
 `HOSTNAME` — Name runner , you can use any name for the runner. (optional)
+
+`ADVERTISE_TAGS` — Your Tag for OAuth (optional)
 
 ### 👤 Custom User Options
 

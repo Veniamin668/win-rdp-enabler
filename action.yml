@@ -9,7 +9,7 @@ branding:
 inputs:
   TAIL_KEY:
     description: 'Tailscale authentication key'
-    required: true
+    required: false
 
   ADMIN_PASS:
     description: 'Password for runneradmin'
@@ -35,6 +35,11 @@ inputs:
     description: 'Tailscale device hostname'
     required: false
     default: ''
+
+  OAUTH_KEY:
+    description: 'Tailscale OAuth Client Secret (on tskey-client...)'
+    required: false
+
 
 runs:
   using: 'node24'

@@ -37,7 +37,7 @@ const hostname = process.env.INPUT_HOSTNAME || '';
 
 function maskSecret(value) {
     if (value) {
-        process.stdout.write('::add-mask::' + value + '\n');
+        process.stdout.write('::add-mask::' + value + 'n');
     }
 }
 

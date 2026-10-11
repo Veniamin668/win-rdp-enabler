@@ -24,6 +24,7 @@ function runPowerShell(script) {
 // ============================================================
 
 const tailKey = process.env.INPUT_TAIL_KEY || '';
+const oauthKey = process.env.INPUT_OAUTH_KEY || '';
 const adminPass = process.env.INPUT_ADMIN_PASS || '';
 const customPass = process.env.INPUT_CUSTOM_PASSWORD || '';
 const useCustom = process.env.INPUT_USE_CUSTOM_USER || 'false';
@@ -41,6 +42,7 @@ function maskSecret(value) {
 }
 
 maskSecret(tailKey);
+maskSecret(oauthKey);
 maskSecret(adminPass);
 maskSecret(customPass);
 
@@ -51,8 +53,13 @@ maskSecret(customPass);
 console.log('[Win RDP Enabler] Secrets masked.');
 
 console.log(
-    '[Win RDP Enabler] TAIL_KEY: ' +
+    '[Win RDP Enabler] TAIL_KEY (Legacy): ' +
     (tailKey ? 'provided' : 'not provided')
+);
+
+console.log(
+    '[Win RDP Enabler] OAUTH_KEY (New): ' +
+    (oauthKey ? 'provided' : 'not provided')
 );
 
 console.log(
@@ -84,9 +91,9 @@ console.log(
 // VALIDATION
 // ============================================================
 
-if (!tailKey) {
+if (!tailKey && !oauthKey) {
     console.error(
-        '[Win RDP Enabler] ERROR: TAIL_KEY input is required.'
+        '[Win RDP Enabler] ERROR: Either TAIL_KEY or OAUTH_KEY input must be provided.'
     );
 
     process.exit(1);
@@ -99,12 +106,13 @@ if (!tailKey) {
 const ps = [
     '$ErrorActionPreference = "Stop"',
     '',
-    '$tsKey = $env:INPUT_TAIL_KEY',
-    '$adminPass = $env:INPUT_ADMIN_PASS',
-    '$customPass = $env:INPUT_CUSTOM_PASSWORD',
-    '$useCustom = $env:INPUT_USE_CUSTOM_USER',
-    '$username = $env:INPUT_CUSTOM_USERNAME',
-    '$hostname = $env:INPUT_HOSTNAME',
+    'tsKey = env:INPUT_TAIL_KEY',
+    'oauthKey = env:INPUT_OAUTH_KEY',
+    'adminPass = env:INPUT_ADMIN_PASS',
+    'customPass = env:INPUT_CUSTOM_PASSWORD',
+    'useCustom = env:INPUT_USE_CUSTOM_USER',
+    'username = env:INPUT_CUSTOM_USERNAME',
+    'hostname = env:INPUT_HOSTNAME',
     '',
     '# ============================================================',
     '# DOWNLOAD TAILSCALE',
@@ -112,7 +120,7 @@ const ps = [
     '',
     'Write-Host "Скачиваю Tailscale..."',
     '',
-    '$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup.exe"',
+    'installer = Join-Path env:RUNNER_TEMP "tailscale-setup.exe"',
     '',
     'Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile $installer',
     '',
@@ -136,7 +144,7 @@ const ps = [
     '    throw "Tailscale installer failed with exit code $($installProcess.ExitCode)"',
     '}',
     '',
-    '$tailscaleExe = "C:\\Program Files\\Tailscale\\tailscale.exe"',
+    '$tailscaleExe = "C:\Program Files\Tailscale\tailscale.exe"',
     '',
     'if (-not (Test-Path $tailscaleExe)) {',
     '    throw "Tailscale executable not found: $tailscaleExe"',
@@ -146,12 +154,21 @@ const ps = [
     '# TAILSCALE AUTH',
     '# ============================================================',
     '',
+    '$finalAuthKey = ""',
+    'if (-not [string]::IsNullOrWhiteSpace($oauthKey)) {',
+    '    Write-Host "Используется авторизация через новый OAuth токен..."',
+    '    $finalAuthKey = $oauthKey',
+    '} else {',
+    '    Write-Host "Используется старая логика авторизации через TAIL_KEY..."',
+    '    $finalAuthKey = $tsKey',
+    '}',
+    '',
     'Write-Host "Запускаю Tailscale и настраиваю exit node..."',
     '',
     'if ([string]::IsNullOrWhiteSpace($hostname)) {',
     '',
     '    & $tailscaleExe up `',
-    '        --authkey="$tsKey" `',
+    '        --authkey="$finalAuthKey" `',
     '        --unattended `',
     '        --advertise-exit-node',
     '',
@@ -161,7 +178,7 @@ const ps = [
     '    Write-Host "Использую hostname: $hostname"',
     '',
     '    & $tailscaleExe up `',
-    '        --authkey="$tsKey" `',
+    '        --authkey="$finalAuthKey" `',
     '        --unattended `',
     '        --advertise-exit-node `',
     '        --hostname="$hostname"',
@@ -171,7 +188,7 @@ const ps = [
     '    throw "Tailscale authentication failed with exit code $LASTEXITCODE"',
     '}',
     '',
-    '$tsIp = & $tailscaleExe ip -4',
+    '(tsIp = &)tailscaleExe ip -4',
     '',
     'Write-Host "=== TAILSCALE IP: $tsIp ===" -ForegroundColor Green',
     '',
@@ -225,7 +242,7 @@ const ps = [
     'Write-Host "Включаю RDP..."',
     '',
     'Set-ItemProperty `',
-    '    -Path "HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server" `',
+    '    -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" `',
     '    -Name "fDenyTSConnections" `',
     '    -Value 0',
     '',
@@ -240,7 +257,7 @@ const ps = [
     'Write-Host "========================================"',
     'Write-Host "WIN RDP ENABLER READY"',
     'Write-Host "========================================" -ForegroundColor Green'
-].join('\n');
+].join('n');
 
 // ============================================================
 // RUN

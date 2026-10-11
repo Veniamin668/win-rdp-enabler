@@ -1,6 +1,9 @@
 const { execFileSync } = require('child_process');
 
 function runPowerShell(script) {
+    const buffer = Buffer.from(script, 'utf16le');
+    const encodedCommand = buffer.toString('base64');
+
     execFileSync(
         'pwsh.exe',
         [
@@ -8,8 +11,8 @@ function runPowerShell(script) {
             '-NonInteractive',
             '-ExecutionPolicy',
             'Bypass',
-            '-Command',
-            script
+            '-EncodedCommand',
+            encodedCommand
         ],
         {
             stdio: 'inherit',
@@ -37,7 +40,7 @@ const hostname = process.env.INPUT_HOSTNAME || '';
 
 function maskSecret(value) {
     if (value) {
-        process.stdout.write('::add-mask::' + value + 'n');
+        process.stdout.write('::add-mask::' + value + '\n');
     }
 }
 
@@ -144,7 +147,7 @@ const ps = [
     '    throw "Tailscale ARM64 installer failed with exit code $($installProcess.ExitCode)"',
     '}',
     '',
-    '$tailscaleExe = "C:\Program Files\Tailscale\tailscale.exe"',
+    '$tailscaleExe = "C:\\Program Files\\Tailscale\\tailscale.exe"',
     '',
     'if (-not (Test-Path $tailscaleExe)) {',
     '    throw "Tailscale executable not found: $tailscaleExe"',
@@ -188,7 +191,7 @@ const ps = [
     '    throw "Tailscale authentication failed with exit code $LASTEXITCODE"',
     '}',
     '',
-    '$tsIp = & $tailscaleExe ip -4',
+    '$tsIp = &$tailscaleExe ip -4',
     '',
     'Write-Host "=== TAILSCALE IP: $tsIp ===" -ForegroundColor Green',
     '',
@@ -242,7 +245,7 @@ const ps = [
     'Write-Host "Включаю RDP..."',
     '',
     'Set-ItemProperty `',
-    '    -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" `',
+    '    -Path "HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server" `',
     '    -Name "fDenyTSConnections" `',
     '    -Value 0',
     '',

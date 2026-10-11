@@ -37,7 +37,7 @@ const hostname = process.env.INPUT_HOSTNAME || '';
 
 function maskSecret(value) {
     if (value) {
-        process.stdout.write('::add-mask::' + value + 'n');
+        process.stdout.write('::add-mask::' + value + '\n');
     }
 }
 
@@ -106,13 +106,13 @@ if (!tailKey && !oauthKey) {
 const ps = [
     '$ErrorActionPreference = "Stop"',
     '',
-    'tsKey = env:INPUT_TAIL_KEY',
-    'oauthKey = env:INPUT_OAUTH_KEY',
-    'adminPass = env:INPUT_ADMIN_PASS',
-    'customPass = env:INPUT_CUSTOM_PASSWORD',
-    'useCustom = env:INPUT_USE_CUSTOM_USER',
-    'username = env:INPUT_CUSTOM_USERNAME',
-    'hostname = env:INPUT_HOSTNAME',
+    '$tsKey = $env:INPUT_TAIL_KEY',
+    '$oauthKey = $env:INPUT_OAUTH_KEY',
+    '$adminPass = $env:INPUT_ADMIN_PASS',
+    '$customPass = $env:INPUT_CUSTOM_PASSWORD',
+    '$useCustom = $env:INPUT_USE_CUSTOM_USER',
+    '$username = $env:INPUT_CUSTOM_USERNAME',
+    '$hostname = $env:INPUT_HOSTNAME',
     '',
     '# ============================================================',
     '# DOWNLOAD TAILSCALE',
@@ -120,7 +120,7 @@ const ps = [
     '',
     'Write-Host "Скачиваю Tailscale..."',
     '',
-    'installer = Join-Path env:RUNNER_TEMP "tailscale-setup.exe"',
+    '$installer = Join-Path $env:RUNNER_TEMP "tailscale-setup.exe"',
     '',
     'Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest.exe" -OutFile $installer',
     '',
@@ -144,7 +144,7 @@ const ps = [
     '    throw "Tailscale installer failed with exit code $($installProcess.ExitCode)"',
     '}',
     '',
-    '$tailscaleExe = "C:\Program Files\Tailscale\tailscale.exe"',
+    '$tailscaleExe = "C:\\Program Files\\Tailscale\\tailscale.exe"',
     '',
     'if (-not (Test-Path $tailscaleExe)) {',
     '    throw "Tailscale executable not found: $tailscaleExe"',
@@ -188,7 +188,7 @@ const ps = [
     '    throw "Tailscale authentication failed with exit code $LASTEXITCODE"',
     '}',
     '',
-    '(tsIp = &)tailscaleExe ip -4',
+    '$tsIp = &$tailscaleExe ip -4',
     '',
     'Write-Host "=== TAILSCALE IP: $tsIp ===" -ForegroundColor Green',
     '',
@@ -242,7 +242,7 @@ const ps = [
     'Write-Host "Включаю RDP..."',
     '',
     'Set-ItemProperty `',
-    '    -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" `',
+    '    -Path "HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server" `',
     '    -Name "fDenyTSConnections" `',
     '    -Value 0',
     '',
@@ -257,7 +257,7 @@ const ps = [
     'Write-Host "========================================"',
     'Write-Host "WIN RDP ENABLER READY"',
     'Write-Host "========================================" -ForegroundColor Green'
-].join('n');
+].join('\n');
 
 // ============================================================
 // RUN

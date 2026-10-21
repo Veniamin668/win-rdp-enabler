@@ -43,3 +43,13 @@ Go to your repository Settings -> Secrets and variables -> Actions and add:
 
 - If `use-custom-user` is set to **`false`**, the action will use the default `runneradmin` account (and update its password if `ADMIN_PASS` is provided).
 - If you want to create your own local admin, set `use-custom-user` to **`true`**, specify your desired name in `username`, and provide a password via `CUSTOM_PASSWORD`.
+
+
+<details>
+<summary><b>🖼️ Example RDP Works (Click, to expand)</b></summary>
+
+<p align="center">
+  <img src="scrin/rdpexample.png" alt="RDP Action Preview" width="800">
+</p>
+
+</details>
